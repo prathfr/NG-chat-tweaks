@@ -12,6 +12,11 @@ const Globals = require("./globals.js");
 
 var cacheOwnStats = mod.addBoolSetting("cacheOwnStats", "Cache Own Stats", "Cache your own stats", true);
 var maxCacheTime = mod.addNumberSetting("maxCacheTime", "Max Cache Time (mins)", "Max time (in mins) before cached stats are refreshed", 1, 60, 1, 30);
+var showLevel = mod.addBoolSetting("showLevel", "Show Level", "Show level", true);
+var showTier = mod.addBoolSetting("showTier", "Show Tier", "Show tier", true);
+var showRank = mod.addBoolSetting("showRank", "Show Rank", "Show rank", true);
+var showGuild = mod.addBoolSetting("showGuild", "Show Guild", "Show guild", true);
+var showKDR = mod.addBoolSetting("showKDR", "Show KDR", "Show KDR", true);
 
 
 var playerCache = {};
@@ -22,7 +27,11 @@ function getTeam(teamColor, playerCount) {
         playerCount.substring(playerCount.indexOf('/') + 3, playerCount.length - 3)
     ))) {
         const color = teamColor.charAt(1);
-        return `\u00A7${color}\u00A7l${Globals.teamColors[color]} \u00A7r\u00A7${color}`
+        if (!Globals.teamColors[color]) {
+            return teamColor
+        } else {
+            return `\u00A7${color}\u00A7l${Globals.teamColors[color]} \u00A7r\u00A7${color}`
+        }
     } else {
         return teamColor
     }
@@ -30,24 +39,33 @@ function getTeam(teamColor, playerCount) {
 
 function getPrintStr(name, team, playerCount, extra) {
     if (playerCache[name]["nicked"]) {
-        return "{team}{name} \u00A7ehas joined {playerCount}! \u00A7r\u00A7cNicked\u00A7r{extra}"
-                .replace("{team}", getTeam(team, playerCount))
-                .replace("{name}", name)
-                .replace("{playerCount}", playerCount)
-                .replace("{extra}", extra)
+        return `${getTeam(team, playerCount)}${name} \u00A7ehas joined ${playerCount}! \u00A7r\u00A7cNicked\u00A7r${extra}`
     } else {
-        return "{level} {tier}{rank}{team}{name} {guild}\u00A7r({kdr}) \u00A7ehas joined {playerCount}!{extra}"
-                .replace("{level}", playerCache[name]["level"])
-                .replace("{tier}", playerCache[name]["tier"] ? Globals.tierUnicodes[playerCache[name]["tier"].toLowerCase()] + ' ' : '')
-                .replace("{rank}", playerCache[name]["ranks"].length > 0 ? Globals.rankUnicodes[playerCache[name]["ranks"][0].toLowerCase()] + ' ' : '')
-                .replace("{team}", getTeam(team, playerCount))
-                .replace("{name}", name)
-                .replace("{guild}", playerCache[name]["guild"])
-                .replace("{kdr}", playerCache[name]["kdr"])
-                .replace("{playerCount}", playerCount)
-                .replace("{extra}", extra)
+        var printStr = '';
+        if (showLevel.getValue()) {
+            printStr += playerCache[name]["level"] + ' ';
+        }
+        if (showTier.getValue() && playerCache[name]["tier"]) {
+            printStr += Globals.tierUnicodes[playerCache[name]["tier"].toLowerCase()];
+        }
+        if (showRank.getValue() && playerCache[name]["ranks"].length > 0) {
+            printStr += Globals.rankUnicodes[playerCache[name]["ranks"][0].toLowerCase()];
+        }
+        if (showTier.getValue() || showRank.getValue()) {
+            printStr += ' ';
+        }
+        printStr += getTeam(team, playerCount) + name + '\u00A7r ';
+        if (showGuild.getValue()) {
+            printStr += playerCache[name]["guild"] + ' ';
+        }
+        if (showKDR.getValue()) {
+            printStr += `(${playerCache[name]["kdr"]}) `;
+        }
+        printStr += `\u00A7ehas joined ${playerCount}!${extra}`;
+        return printStr;
     }
 }
+
 
 
 client.on("receive-chat", (event) => {
@@ -106,7 +124,7 @@ client.on("receive-chat", (event) => {
                             var guild_tag = '';
                             if (r["guildData"]) {
                                 if (r["guildData"]["rawTag"]) {
-                                    guild_tag = `\u00A7r\u00A7l${Globals.fixFormat(r["guildData"]["rawTag"])}\u00A7r `;
+                                    guild_tag = `\u00A7r\u00A7l${Globals.fixFormat(r["guildData"]["rawTag"])}\u00A7r`;
                                 } else {
                                     guild_tag = `\u00A7r[${r["guildData"]["name"]}] `;
                                 }
